@@ -33,7 +33,8 @@ def fetch_rss_with_browser():
         return rss_content
 
 def check_post_with_ai(content):
-    url = f"https://api.cloudflare.com/client/v4/accounts/{ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct"
+    # 【修改点】更换为未弃用的免费模型 llama-3.1-8b-instruct
+    url = f"https://api.cloudflare.com/client/v4/accounts/{ACCOUNT_ID}/ai/run/@cf/meta/llama-3.1-8b-instruct"
     headers = {
         "Authorization": f"Bearer {API_TOKEN}",
         "Content-Type": "application/json"
