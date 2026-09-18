@@ -64,10 +64,14 @@ def send_qq_notification(title, link):
     try:
         token_url = "https://bots.qq.com/app/getAppAccessToken"
         token_resp = requests.post(token_url, json={"appId": QQ_APPID, "clientSecret": QQ_SECRET}, timeout=10)
+        
+        # 【关键修改】打印QQ官方返回的信息，方便看为什么失败
+        print(f"    QQ API 返回详情: {token_resp.text}")
+        
         access_token = token_resp.json().get("access_token")
         
         if not access_token:
-            print("    ❌ 获取 QQ access_token 失败，请检查 AppID/Secret。")
+            print("    ❌ 获取 QQ access_token 失败，请检查 AppID/Secret 或沙箱配置。")
             return
 
         msg_url = f"https://api.sgroup.qq.com/v2/groups/{QQ_GROUP_ID}/messages"
