@@ -37,24 +37,48 @@ def check_post_with_ai(content):
 
 def main():
     print(f"[{datetime.now()}] 开始扫描论坛新帖...")
-    feed = feedparser.parse(FORUM_RSS)
     
-    for entry in feed.entries[:5]:
-        title = entry.title
-        link = entry.link
-        content = entry.get("summary", entry.get("description", ""))
+    # 【关键改动】伪装成浏览器去请求RSS，避免被InfinityFree拦截
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    
+    try:
+        resp = requests.get(FORUM_RSS, headers=headers, timeout=15)
+        print(f"RSS 请求状态码: {resp.status_code}")
         
-        print(f"正在检查: {title}")
+        if resp.status_code != 200:
+            print(f"❌ 抓取失败，状态码不是 200，而是 {resp.status_code}")
+            return
+            
+        feed = feedparser.parse(resp.text)
         
-        if check_post_with_ai(content):
-            print(f"\n🚨 发现违规帖子！")
-            print(f"标题: {title}")
-            print(f"链接: {link}")
-            print(f"内容: {content[:100]}...")
-        else:
-            print("  ✅ 内容正常")
+        if len(feed.entries) == 0:
+            print("⚠️ 请求成功，但 RSS 里没有解析到任何帖子。可能是内容格式不对。")
+            print(f"RSS 前 200 个字符预览: {resp.text[:200]}")
+            return
+
+        print(f"✅ 成功抓取到 {len(feed.entries)} 篇帖子，开始审核...")
         
-        time.sleep(1)
+        for entry in feed.entries[:5]:
+            title = entry.title
+            link = entry.link
+            content = entry.get("summary", entry.get("description", ""))
+            
+            print(f"正在检查: {title}")
+            
+            if check_post_with_ai(content):
+                print(f"\n🚨 发现违规帖子！")
+                print(f"标题: {title}")
+                print(f"链接: {link}")
+                print(f"内容: {content[:100]}...")
+            else:
+                print("  ✅ 内容正常")
+            
+            time.sleep(1)
+            
+    except Exception as e:
+        print(f"❌ 抓取 RSS 时发生严重错误: {e}")
     
     print(f"[{datetime.now()}] 扫描完成。")
 
