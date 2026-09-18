@@ -1,6 +1,6 @@
 import os
 import time
-import requests
+import cloudscraper
 import feedparser
 from datetime import datetime
 
@@ -38,13 +38,11 @@ def check_post_with_ai(content):
 def main():
     print(f"[{datetime.now()}] 开始扫描论坛新帖...")
     
-    # 【关键改动】伪装成浏览器去请求RSS，避免被InfinityFree拦截
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }
+    # 【关键改动】用 cloudscraper 绕过 InfinityFree 的 JS 挑战
+    scraper = cloudscraper.create_scraper()
     
     try:
-        resp = requests.get(FORUM_RSS, headers=headers, timeout=15)
+        resp = scraper.get(FORUM_RSS, timeout=20)
         print(f"RSS 请求状态码: {resp.status_code}")
         
         if resp.status_code != 200:
@@ -54,7 +52,7 @@ def main():
         feed = feedparser.parse(resp.text)
         
         if len(feed.entries) == 0:
-            print("⚠️ 请求成功，但 RSS 里没有解析到任何帖子。可能是内容格式不对。")
+            print("⚠️ 请求成功，但 RSS 里没有解析到任何帖子。")
             print(f"RSS 前 200 个字符预览: {resp.text[:200]}")
             return
 
