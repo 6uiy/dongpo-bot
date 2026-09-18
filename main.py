@@ -61,7 +61,6 @@ def check_post_with_ai(content):
         return False
 
 def send_qq_notification(title, link):
-    """每次发现违规都尝试发送QQ通知，不限制次数"""
     try:
         token_url = "https://bots.qq.com/app/getAppAccessToken"
         token_resp = requests.post(token_url, json={"appId": QQ_APPID, "clientSecret": QQ_SECRET}, timeout=10)
