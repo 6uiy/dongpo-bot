@@ -4,13 +4,11 @@ import requests
 import feedparser
 from datetime import datetime
 
-# 从环境变量读取（Render 中设置）
 ACCOUNT_ID = os.environ.get("CF_ACCOUNT_ID")
 API_TOKEN = os.environ.get("CF_API_TOKEN")
-FORUM_RSS = "https://dplt.ct.ws/feed.php"  # 论坛 RSS 地址
+FORUM_RSS = "https://dplt.ct.ws/feed.php"
 
 def check_post_with_ai(content):
-    """用 Cloudflare Workers AI 判断帖子是否违规"""
     url = f"https://api.cloudflare.com/client/v4/accounts/{ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct"
     headers = {
         "Authorization": f"Bearer {API_TOKEN}",
@@ -58,12 +56,7 @@ def main():
         
         time.sleep(1)
     
-    print(f"[{datetime.now()}] 扫描完成。\n")
+    print(f"[{datetime.now()}] 扫描完成。")
 
 if __name__ == "__main__":
-    while True:
-        try:
-            main()
-        except Exception as e:
-            print(f"运行出错: {e}")
-        time.sleep(600)  # 每 10 分钟循环一次
+    main()
