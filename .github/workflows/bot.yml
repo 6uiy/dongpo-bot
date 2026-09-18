@@ -1,8 +1,8 @@
 name: 东坡论坛机器人
 on:
   schedule:
-    - cron: '*/5 * * * *'  # 每10分钟运行一次
-  workflow_dispatch:        # 允许手动点击运行
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
 
 jobs:
   run-bot:
@@ -15,6 +15,8 @@ jobs:
           python-version: '3.10'
       - name: 安装依赖
         run: pip install -r requirements.txt
+      - name: 安装 Playwright 浏览器
+        run: python -m playwright install --with-deps chromium
       - name: 运行机器人
         run: python main.py
         env:
