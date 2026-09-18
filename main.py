@@ -6,7 +6,7 @@ from datetime import datetime
 
 ACCOUNT_ID = os.environ.get("CF_ACCOUNT_ID")
 API_TOKEN = os.environ.get("CF_API_TOKEN")
-FORUM_RSS = "https://dplt.ct.ws/feed.php"
+FORUM_RSS = "https://dplt.ct.ws/app.php/feed"
 
 def check_post_with_ai(content):
     url = f"https://api.cloudflare.com/client/v4/accounts/{ACCOUNT_ID}/ai/run/@cf/meta/llama-3-8b-instruct"
