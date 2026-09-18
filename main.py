@@ -2,6 +2,7 @@ import os
 import time
 import requests
 import feedparser
+import re
 from datetime import datetime
 from playwright.sync_api import sync_playwright
 
@@ -10,25 +11,24 @@ API_TOKEN = os.environ.get("CF_API_TOKEN")
 FORUM_HOME = "https://dplt.ct.ws/"
 FORUM_RSS = "https://dplt.ct.ws/app.php/feed"
 
+def clean_html(text):
+    """去掉帖子里的 HTML 标签，方便 AI 判断"""
+    text = re.sub(r'<[^>]+>', '', text)
+    return text.strip()
+
 def fetch_rss_with_browser():
-    """用真正的无头浏览器访问论坛，执行 JS 挑战，拿到 RSS 内容"""
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
         page = context.new_page()
-        
-        print("  正在访问论坛首页，通过 JS 挑战...")
         page.goto(FORUM_HOME, wait_until="networkidle", timeout=60000)
         page.wait_for_timeout(3000)
-        
-        print("  正在用浏览器请求 RSS...")
         rss_content = page.evaluate("""async () => {
             const resp = await fetch('/app.php/feed');
             return await resp.text();
         }""")
-        
         browser.close()
         return rss_content
 
@@ -45,16 +45,27 @@ def check_post_with_ai(content):
         "messages": [
             {"role": "system", "content": "你是一个严格的论坛审核员。"},
             {"role": "user", "content": prompt}
-        ]
+        ],
+        "stream": False
     }
     try:
         resp = requests.post(url, headers=headers, json=data, timeout=30)
         result = resp.json()
-        if "result" in result and "response" in result["result"]:
-            return "违规" in result["result"]["response"]
-        return False
+        
+        # 详细打印返回内容，方便排查
+        if not result.get("success", False):
+            print(f"    ⚠️ API 返回错误: {result.get('errors', '未知错误')}")
+            return False
+        
+        if result.get("result") and "response" in result["result"]:
+            answer = result["result"]["response"]
+            print(f"    AI 回答: {answer}")
+            return "违规" in answer
+        else:
+            print(f"    ⚠️ API 返回格式异常: {str(result)[:200]}")
+            return False
     except Exception as e:
-        print(f"  AI 调用出错: {e}")
+        print(f"    AI 调用出错: {e}")
         return False
 
 def main():
@@ -68,7 +79,6 @@ def main():
         
         if len(feed.entries) == 0:
             print("  ⚠️ RSS 解析出来是空的")
-            print(f"  预览: {rss_text[:200]}")
             return
         
         print(f"  ✅ 成功抓取到 {len(feed.entries)} 篇帖子，开始审核...")
@@ -76,7 +86,8 @@ def main():
         for entry in feed.entries[:5]:
             title = entry.title
             link = entry.link
-            content = entry.get("summary", entry.get("description", ""))
+            raw_content = entry.get("summary", entry.get("description", ""))
+            content = clean_html(raw_content)
             
             print(f"  正在检查: {title}")
             
@@ -84,6 +95,7 @@ def main():
                 print(f"  🚨 发现违规帖子！")
                 print(f"  标题: {title}")
                 print(f"  链接: {link}")
+                print(f"  内容: {content[:100]}...")
             else:
                 print("    ✅ 内容正常")
             
