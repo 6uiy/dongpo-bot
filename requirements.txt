@@ -1,2 +1,3 @@
-cloudscraper
+playwright
 feedparser
+requests
